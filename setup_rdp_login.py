@@ -70,7 +70,24 @@ def run(cmd, title="", fatal=True):
 if os.geteuid() != 0:
     err("Execute este script com sudo.")
     sys.exit(1)
+  
 
+# ======================
+# CHECK INTERNET
+# ======================  
+info("Verificando conectividade com a internet")
+net = subprocess.run(
+    ["ping", "-c", "1", "8.8.8.8"],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL
+)
+
+if net.returncode != 0:
+    warn("Sem acesso à internet no momento (downloads podem falhar)")
+else:
+    ok("Internet disponível")
+
+    
 # ======================
 # ATUALIZA SISTEMA
 # ======================
@@ -120,8 +137,30 @@ count = 0
 for name, url in files.items():
     count += 1
     progress("Baixando arquivos", int((count - 1) / total * 100))
-    subprocess.run(["wget", "-q", "-O", f"{BG_DIR}/{name}", url], check=True)
-    os.chown(f"{BG_DIR}/{name}", uid, gid)
+
+    dest = f"{BG_DIR}/{name}"
+    success = False
+
+    for attempt in range(1, 4):  # até 3 tentativas
+        info(f"Download {name} (tentativa {attempt}/3)")
+        result = subprocess.run(
+            ["wget", "-q", "-O", dest, url],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+        if result.returncode == 0 and os.path.exists(dest):
+            os.chown(dest, uid, gid)
+            ok(f"{name} baixado")
+            success = True
+            break
+        else:
+            warn(f"Falha ao baixar {name}, tentando novamente...")
+            time.sleep(2)
+
+    if not success:
+        warn(f"{name} NÃO foi baixado (rede indisponível?)")
+
 
 progress("Baixando arquivos", 100)
 ok("Arquivos baixados")
@@ -196,9 +235,48 @@ ok("VNC ativo")
 # ======================
 info("Configurando áudio")
 
-run(["amixer", "set", "Master", "100%"], "Volume em 100%", fatal=False)
+def get_mixers():
+    result = subprocess.run(
+        ["amixer", "scontrols"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+    mixers = []
+    for line in result.stdout.splitlines():
+        if "'" in line:
+            mixers.append(line.split("'")[1])
+    return mixers
 
-# AV JACK = 2 (se existir)
+
+mixers = get_mixers()
+
+if not mixers:
+    warn("Nenhum mixer de áudio encontrado (ALSA não pronto?)")
+else:
+    if "Master" in mixers:
+        run(
+            ["amixer", "set", "Master", "100%"],
+            "Volume Master em 100%",
+            fatal=False
+        )
+        ok("Volume configurado via Master")
+    else:
+        fallback = mixers[0]
+        run(
+            ["amixer", "set", fallback, "100%"],
+            f"Volume {fallback} em 100%",
+            fatal=False
+        )
+        warn(f"Master não encontrado, usando '{fallback}'")
+
+
+# ======================
+# SELEÇÃO DE SAÍDA (AV JACK)
+# ======================
+# numid=3 normalmente controla HDMI / Jack no Raspberry
+# 0 = Auto | 1 = HDMI | 2 = Jack
+
 result = subprocess.run(
     ["amixer", "cset", "numid=3", "2"],
     stdout=subprocess.DEVNULL,
