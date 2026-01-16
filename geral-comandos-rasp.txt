@@ -1,0 +1,36 @@
+uname -a
+lsb_release -a
+lscpu
+free -h
+df -h
+lsblk
+ip a
+vcgencmd measure_temp
+vcgencmd get_throttled
+cat /proc/meminfo
+vcgencmd get_config int
+vcgencmd get_config str
+vcgencmd display_power
+echo $XDG_SESSION_TYPE
+loginctl
+ps -e | grep -E 'Xorg|wayland|weston'
+printenv | grep -E 'DISPLAY|WAYLAND|XDG'
+echo $XDG_CURRENT_DESKTOP
+echo $DESKTOP_SESSION
+xinput
+
+wlfreerdp3 /u:warruda /p: /v:192.168.0.43 /f +clipboard /sound /cert:ignore /gdi:sw /rfx /gfx:avc420:off /smart-sizing
+
+remmina -c rdp://warruda:3DQpLVL2qQeOOtxGsdboLw==@192.168.0.43 --enable-fullscreen --disable-toolbar
+
+aúdio em 100%
+amixer -c 0 set PCM 100% unmute
+
+wget https://i.ibb.co/XfptybtD/leao.jpg -O ~/leao.jpg;pcmanfm --set-wallpaper /tmp/leao.jpg --wallpaper-mode=stretch
+
+
+lxpanelctl-pi config
+
+keyboard_grab=1
+
+r3mm1n4
