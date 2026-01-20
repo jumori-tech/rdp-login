@@ -89,6 +89,7 @@ After=graphical-session.target
 Wants=graphical-session.target
 
 [Service]
+ExecStartPre=/usr/bin/setxkbmap br
 Type=simple
 ExecStart=/usr/bin/remmina
 Restart=always
@@ -130,3 +131,4 @@ ok("SETUP CONCLUÍDO!")
 warn("VOCÊ PRECISA REINICIAR AGORA PARA O X11 E O REMMINA FUNCIONAREM.")
 print(f"{C.YELLOW}sudo reboot{C.RESET}")
 print("="*40)
+
